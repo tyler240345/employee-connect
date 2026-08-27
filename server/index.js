@@ -1,15 +1,23 @@
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
 const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 const pool = new Pool({
     user: process.env.DB_USER,
@@ -82,19 +90,24 @@ app.post('/login', async (req, res) => {
         {expiresIn: '8h'}
     );
 
-    res.json({token, id: user.id, username: user.username, fullName: user.full_name, role: user.role});
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 8 * 60 * 60 * 1000,
+    });
+
+    res.json({id: user.id, username: user.username, fullName: user.full_name, role: user.role});
 
 });
 
 //FUNCTION
 function requireAuth(req, res, next) {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.token;
 
-    if (!authHeader) {
+    if (!token) {
         return res.status(401).json({error: 'No Token Provided'});
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

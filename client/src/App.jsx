@@ -1,15 +1,10 @@
 import { useState , useEffect} from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
 
 function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-
-  const [token, setToken] = useState('');
   const [user, setUser] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -18,6 +13,7 @@ function App() {
 
     const response = await fetch('http://localhost:3000/login', {
       method: 'POST',
+      credentials: 'include',
       headers: {'Content-Type': 'application/json' },
       body: JSON.stringify({username, password}),
     });
@@ -31,20 +27,16 @@ function App() {
 
     }
 
-    setToken(data.token);
+    setUser(data);
 
   };
 
   useEffect(() => {
-    if (!token) return;
-
     fetch('http://localhost:3000/me', {
-      headers: {Authorization: `Bearer ${token}` },
+      credentials: 'include',
     })
       .then((res) => {
         if (!res.ok) {
-          setToken('');
-          setMessage('Session expired, please log in again.');
           return null;
         }
         return res.json();
@@ -53,7 +45,7 @@ function App() {
       .then((data) => {
         if (data) setUser(data);
       });
-  }, [token]);
+  }, []);
 
   if (user) {
     return (
