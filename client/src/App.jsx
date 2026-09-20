@@ -6,6 +6,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [user, setUser] = useState(null);
+  const [shifts, setShifts] = useState([]);
 
   const handleSubmit = async (e) => {
     
@@ -47,12 +48,35 @@ function App() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    fetch('http://localhost:3000/shifts', {
+      credentials: 'include',
+    })
+
+      .then((res) => res.json())
+      .then((data) => setShifts(data));
+  }, [user]);
+
   if (user) {
     return (
       <div>
         <h1>Welcome, {user.full_name}</h1>
         <p>Username: {user.username}</p>
         <p>Role: {user.role}</p>
+
+        <h2>Schedule</h2>
+        <ul>
+          {shifts.map((shift) => (
+            <li key={shift.id}>
+              {new Date(shift.start_time).toLocaleDateString()} {' '}
+              {shift.full_name}: {new Date(shift.start_time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', timeZone: shift.timezone})}
+              {' to '}
+              {new Date(shift.end_time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', timeZone: shift.timezone})}
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }

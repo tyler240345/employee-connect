@@ -45,6 +45,19 @@ app.get('/me', requireAuth, async (req, res) => {
     res.json(result.rows[0]);
 });
 
+app.get('/shifts', requireAuth, async (req, res) => {
+    const result = await pool.query(
+        `SELECT shifts.id, shifts.start_time, shifts.end_time, shifts.status, users.full_name, stores.timezone
+         FROM shifts
+         JOIN users ON shifts.user_id = users.id
+         JOIN stores ON shifts.store_id = stores.id
+         WHERE shifts.store_id = $1
+         ORDER BY shifts.start_time`,
+        [req.user.storeId]
+    );
+    res.json(result.rows);
+});
+
 //LISTEN
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
@@ -85,7 +98,7 @@ app.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-        {userId: user.id, role: user.role},
+        {userId: user.id, role: user.role, storeId: user.store_id},
         process.env.JWT_SECRET,
         {expiresIn: '8h'}
     );
@@ -97,7 +110,7 @@ app.post('/login', async (req, res) => {
         maxAge: 8 * 60 * 60 * 1000,
     });
 
-    res.json({id: user.id, username: user.username, fullName: user.full_name, role: user.role});
+    res.json({id: user.id, username: user.username, full_name: user.full_name, role: user.role});
 
 });
 
